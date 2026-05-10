@@ -14,7 +14,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        #login-screen {
+        #login-screen, #image-zoom-overlay {
             backdrop-filter: blur(10px);
         }
     </style>
@@ -54,6 +54,14 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- Khung phóng to ảnh (Lightbox) -->
+    <div id="image-zoom-overlay" class="hidden fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 cursor-zoom-out" onclick="closeZoom()">
+        <button class="absolute top-6 right-6 text-white/50 hover:text-white transition-colors">
+            <i data-lucide="x" class="w-10 h-10"></i>
+        </button>
+        <img id="zoomed-image" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl animate-in zoom-in-90 duration-300 pointer-events-none">
     </div>
 
     <!-- Ứng dụng chính -->
@@ -182,7 +190,6 @@
 
         // Khởi tạo
         window.onload = () => {
-            // Kiểm tra trạng thái đăng nhập từ cả localStorage và sessionStorage
             const isPersistedLogin = localStorage.getItem('isLoggedIn') === 'true';
             const isSessionLogin = sessionStorage.getItem('isLoggedIn') === 'true';
 
@@ -197,6 +204,21 @@
             lucide.createIcons();
         };
 
+        // Logic Phóng to ảnh
+        function openZoom(src) {
+            const overlay = document.getElementById('image-zoom-overlay');
+            const img = document.getElementById('zoomed-image');
+            img.src = src;
+            overlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Chặn cuộn trang
+        }
+
+        function closeZoom() {
+            const overlay = document.getElementById('image-zoom-overlay');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = ''; // Cho phép cuộn lại
+        }
+
         // Logic Đăng nhập
         function checkLogin() {
             const user = document.getElementById('login-user').value;
@@ -204,7 +226,6 @@
             const remember = document.getElementById('remember-me').checked;
             const error = document.getElementById('login-error');
 
-            // CẬP NHẬT MẬT KHẨU MỚI: abc123
             if (user === 'wkd' && pass === 'abc123') {
                 if (remember) {
                     localStorage.setItem('isLoggedIn', 'true');
@@ -392,7 +413,7 @@
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto justify-between border-t md:border-t-0 pt-3 md:pt-0">
                         <div class="relative">
-                            ${item.image ? `<img src="${item.image}" class="w-12 h-12 rounded-xl object-cover border-4 border-white shadow-md">` : '<div class="w-12 h-12 bg-slate-100 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-5 h-5"></i></div>'}
+                            ${item.image ? `<img src="${item.image}" onclick="openZoom('${item.image}')" class="w-12 h-12 rounded-xl object-cover border-4 border-white shadow-md cursor-zoom-in hover:scale-105 transition-transform">` : '<div class="w-12 h-12 bg-slate-100 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-5 h-5"></i></div>'}
                         </div>
                         <div class="flex gap-1">
                             <button onclick="toggleStatus(${item.id})" class="p-2.5 rounded-xl transition-all ${item.checked ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-slate-100 text-slate-400'} shadow-sm active:scale-90"><i data-lucide="check-circle"></i></button>
