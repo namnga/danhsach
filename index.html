@@ -3,20 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Danh Sách</title>
+    <title>Quản lý Danh Sách Đồng Bộ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        #login-screen, #image-zoom-overlay {
-            backdrop-filter: blur(10px);
-        }
+        #login-screen, #image-zoom-overlay, #confirm-modal { backdrop-filter: blur(10px); }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen p-4 md:p-8 text-center">
@@ -24,93 +19,77 @@
     <!-- Màn hình Đăng nhập -->
     <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300">
-            <div class="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="lock" class="w-10 h-10 text-indigo-600"></i>
+            <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="cloud-lightning" class="w-8 h-8 text-indigo-600"></i>
             </div>
-            <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">Truy cập hệ thống</h2>
-            <p class="text-slate-400 text-sm font-medium mb-8 uppercase tracking-widest">Vui lòng đăng nhập để tiếp tục</p>
+            <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-1">Hệ thống đồng bộ</h2>
+            <p class="text-slate-400 text-[10px] font-bold mb-8 uppercase tracking-widest">Đăng nhập để làm việc cùng đồng đội</p>
             
             <div class="space-y-4 text-left">
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Tài khoản</label>
-                    <input id="login-user" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none transition-all" placeholder="Nhập tài khoản">
+                    <input id="login-user" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="wkd">
                 </div>
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Mật khẩu</label>
-                    <input id="login-pass" type="password" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none transition-all" placeholder="Nhập mật khẩu">
+                    <input id="login-pass" type="password" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="abc123">
                 </div>
-                
-                <!-- Nút ghi nhớ -->
                 <div class="flex items-center gap-2 ml-1">
-                    <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                    <label for="remember-me" class="text-xs font-bold text-slate-600 cursor-pointer uppercase tracking-tight">Ghi nhớ đăng nhập</label>
+                    <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-slate-300 text-indigo-600">
+                    <label for="remember-me" class="text-xs font-bold text-slate-600 cursor-pointer uppercase">Ghi nhớ tôi</label>
                 </div>
-
-                <div id="login-error" class="hidden text-red-500 text-xs font-bold text-center mt-2 italic">
-                    * Tài khoản hoặc mật khẩu không đúng!
-                </div>
-                <button onclick="checkLogin()" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-indigo-100 active:scale-95 mt-4 transition-all">
-                    Đăng nhập ngay
-                </button>
+                <div id="login-error" class="hidden text-red-500 text-xs font-bold text-center italic">* Thông tin không chính xác</div>
+                <button onclick="checkLogin()" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl active:scale-95 transition-all">Đăng nhập</button>
             </div>
         </div>
     </div>
 
-    <!-- Khung phóng to ảnh (Lightbox) -->
-    <div id="image-zoom-overlay" class="hidden fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 cursor-zoom-out" onclick="closeZoom()">
-        <button class="absolute top-6 right-6 text-white/50 hover:text-white transition-colors">
-            <i data-lucide="x" class="w-10 h-10"></i>
-        </button>
-        <img id="zoomed-image" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl animate-in zoom-in-90 duration-300 pointer-events-none">
-    </div>
-
     <!-- Ứng dụng chính -->
     <div class="max-w-6xl mx-auto opacity-0 pointer-events-none transition-opacity duration-500" id="app">
-        <!-- Header -->
         <header class="flex justify-between items-center mb-6 bg-white p-6 rounded-2xl shadow-md border border-slate-200 sticky top-4 z-40">
             <div class="text-left">
                 <h1 class="text-2xl md:text-3xl font-black text-indigo-600 uppercase tracking-tighter">Danh Sách</h1>
                 <div class="flex items-center gap-3">
-                    <p class="text-slate-500 text-xs font-bold uppercase" id="total-count">Tổng cộng: 0 mục</p>
-                    <button onclick="logout()" class="text-slate-400 hover:text-red-500 text-[10px] font-black uppercase underline decoration-2 underline-offset-4">Đăng xuất</button>
+                    <p class="text-slate-500 text-[10px] font-bold uppercase" id="total-count">Đang kết nối...</p>
+                    <button onclick="logout()" class="text-slate-300 hover:text-red-500 text-[10px] font-black uppercase underline decoration-2 underline-offset-4">Thoát</button>
                 </div>
             </div>
-            <button onclick="toggleForm()" id="btn-toggle" class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs shadow-lg hover:bg-indigo-700 transition-all active:scale-95">
+            <button onclick="toggleForm()" class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all">
                 <i data-lucide="plus" class="w-4 h-4"></i> Thêm mới
             </button>
         </header>
 
-        <!-- Danh sách -->
-        <div id="list-container" class="space-y-4 mb-32"></div>
+        <div id="list-container" class="space-y-4 mb-32">
+            <div class="flex justify-center p-20"><div class="loading-spinner"></div></div>
+        </div>
 
         <!-- Form nhập liệu -->
-        <div id="form-overlay" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4">
-            <div class="bg-white w-full max-w-4xl p-8 rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-10">
+        <div id="form-overlay" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-end md:items-center justify-center p-4">
+            <div class="bg-white w-full max-w-4xl p-8 rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl">
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 class="text-xl font-black text-slate-800 uppercase text-left">Thêm Máy Mới</h2>
+                    <h2 class="text-xl font-black text-slate-800 uppercase">Thêm Máy Mới</h2>
                     <button onclick="toggleForm()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
                 </div>
-                
                 <form id="main-form" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                     <div class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Khách hàng *</label>
-                            <input required id="f-customer" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="Tên khách hàng">
+                            <input required id="f-customer" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Máy móc *</label>
-                                <input required id="f-machine" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="Loại máy">
+                                <input required id="f-machine" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Ngày nhập</label>
-                                <input id="f-date" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold" readonly>
+                                <input id="f-date" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold bg-slate-50" readonly>
                             </div>
                         </div>
                         <div>
                             <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Số lần đi</label>
-                            <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                                <button type="button" onclick="setVisit(1)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-indigo-600 text-white shadow-sm" data-val="1">1</button>
+                            <div class="flex gap-2 p-1 bg-slate-100 rounded-xl" id="visit-selector">
+                                <button type="button" onclick="setVisit(1)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-indigo-600 text-white" data-val="1">1</button>
                                 <button type="button" onclick="setVisit(2)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="2">2</button>
                                 <button type="button" onclick="setVisit(3)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="3">3</button>
                                 <button type="button" onclick="setVisit(4)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="4">4</button>
@@ -119,172 +98,170 @@
                         </div>
                     </div>
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Lỗi ban đầu</label>
-                            <textarea id="f-issue" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none h-24" placeholder="Mô tả lỗi..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-indigo-500 mb-1 ml-1">Đã kiểm tra (Xuống dòng tạo danh sách)</label>
-                            <textarea id="f-checked" class="w-full px-5 py-3 border-2 border-slate-300 rounded-xl font-semibold focus:border-indigo-500 outline-none h-24 bg-indigo-50/30" placeholder="Nội dung đã làm..."></textarea>
-                        </div>
+                        <textarea id="f-issue" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold h-24 outline-none focus:border-indigo-500" placeholder="Lỗi ban đầu..."></textarea>
+                        <textarea id="f-checked" class="w-full px-5 py-3 border-2 border-slate-300 rounded-xl font-semibold h-24 bg-indigo-50/20 outline-none focus:border-indigo-500" placeholder="Nội dung kiểm tra..."></textarea>
                         <div class="flex items-center gap-4">
-                            <label class="flex-1 border-2 border-dashed border-slate-200 p-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50">
+                            <label class="flex-1 border-2 border-dashed border-slate-200 p-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer">
                                 <i data-lucide="image" class="w-4 h-4 text-slate-400"></i>
-                                <span class="text-[10px] font-black text-slate-500 uppercase">Ảnh đính kèm</span>
+                                <span class="text-[10px] font-black uppercase text-slate-400">Ảnh máy</span>
                                 <input type="file" id="f-img-input" accept="image/*" class="hidden" onchange="handleImgPreview(event)">
                             </label>
                             <div id="img-preview-box" class="hidden relative w-16 h-16 rounded-xl border overflow-hidden shadow-md">
                                 <img id="img-preview" src="" class="w-full h-full object-cover">
-                                <button type="button" onclick="clearImg()" class="absolute top-0 right-0 bg-red-500 text-white p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                <button type="button" onclick="clearImg()" class="absolute top-0 right-0 bg-red-500 text-white p-0.5"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
-                        <button type="submit" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-indigo-100 active:scale-95">Lưu danh sách</button>
+                        <button type="submit" id="btn-save" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl active:scale-95 transition-all">Đang xử lý...</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Inline Edit Box -->
-        <div id="edit-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <!-- Chỉnh sửa nhanh -->
+        <div id="edit-overlay" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
             <div class="bg-white w-full max-w-2xl p-6 rounded-[2rem] shadow-2xl">
-                <h3 class="font-black uppercase text-slate-800 mb-4 border-b pb-2 text-left">Chỉnh sửa nhanh</h3>
+                <h3 class="font-black uppercase text-slate-800 mb-4 border-b pb-2 text-left">Chỉnh sửa thông tin</h3>
                 <div class="space-y-4 text-left">
                     <input type="hidden" id="edit-id">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Khách hàng</label>
-                            <input id="edit-customer" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Máy móc</label>
-                            <input id="edit-machine" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Số lần đi</label>
-                            <select id="edit-visit" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500 bg-white">
-                                <option value="1">1 lần</option>
-                                <option value="2">2 lần</option>
-                                <option value="3">3 lần</option>
-                                <option value="4">4 lần</option>
-                                <option value="5">5 lần</option>
-                            </select>
-                        </div>
+                        <input id="edit-customer" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500" placeholder="Khách hàng">
+                        <input id="edit-machine" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500" placeholder="Máy móc">
+                        <select id="edit-visit" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold bg-white outline-none">
+                            <option value="1">1 lần</option><option value="2">2 lần</option><option value="3">3 lần</option><option value="4">4 lần</option><option value="5">5 lần</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Đã kiểm tra</label>
-                        <textarea id="edit-content" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold h-32 outline-none focus:border-indigo-500"></textarea>
-                    </div>
+                    <textarea id="edit-content" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold h-32 outline-none focus:border-indigo-500" placeholder="Nội dung kiểm tra..."></textarea>
                     <div class="flex justify-end gap-2 pt-2">
-                        <button onclick="closeEdit()" class="px-6 py-2 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest">Hủy</button>
-                        <button onclick="saveEdit()" class="px-8 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg uppercase tracking-widest">Lưu lại</button>
+                        <button onclick="closeEdit()" class="px-6 py-2 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Hủy</button>
+                        <button onclick="saveEdit()" class="px-8 py-2 bg-indigo-600 text-white rounded-xl font-black text-[10px] shadow-lg uppercase">Cập nhật</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ảnh phóng to -->
+        <div id="image-zoom-overlay" class="hidden fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 cursor-zoom-out" onclick="closeZoom()">
+            <img id="zoomed-image" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl animate-in zoom-in-90 duration-300 pointer-events-none">
+        </div>
+
+        <!-- Modal xác nhận xóa -->
+        <div id="confirm-modal" class="hidden fixed inset-0 z-[120] bg-slate-900/60 flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-[2.5rem] max-w-xs w-full shadow-2xl">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="trash-2" size="32"></i></div>
+                <h4 class="font-black text-slate-800 uppercase text-lg mb-2">Xóa dữ liệu?</h4>
+                <p class="text-slate-500 text-sm mb-6">Hành động này sẽ xóa vĩnh viễn dữ liệu trên hệ thống đám mây.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="closeDelete()" class="py-3 bg-slate-100 text-slate-600 font-bold rounded-2xl text-xs uppercase">Hủy</button>
+                    <button id="btn-delete-confirm" class="py-3 bg-red-500 text-white font-bold rounded-2xl text-xs uppercase shadow-lg shadow-red-100">Xóa</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config từ môi trường
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
         let items = [];
         let currentVisit = 1;
         let currentImgBase64 = null;
+        let unsubscribe = null;
+        let deleteId = null;
 
-        // Khởi tạo
-        window.onload = () => {
-            const isPersistedLogin = localStorage.getItem('isLoggedIn') === 'true';
-            const isSessionLogin = sessionStorage.getItem('isLoggedIn') === 'true';
-
-            if (isPersistedLogin || isSessionLogin) {
-                showApp();
+        // --- AUTHENTICATION ---
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth error:", err);
             }
-
-            const data = localStorage.getItem('v3_machine_list');
-            if (data) items = JSON.parse(data);
-            document.getElementById('f-date').value = new Date().toLocaleDateString('vi-VN');
-            render();
-            lucide.createIcons();
-        };
-
-        // Logic Phóng to ảnh
-        function openZoom(src) {
-            const overlay = document.getElementById('image-zoom-overlay');
-            const img = document.getElementById('zoomed-image');
-            img.src = src;
-            overlay.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Chặn cuộn trang
         }
 
-        function closeZoom() {
-            const overlay = document.getElementById('image-zoom-overlay');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = ''; // Cho phép cuộn lại
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Khi đã có user, bắt đầu lắng nghe dữ liệu đám mây
+                setupRealtimeListener(user.uid);
+                document.getElementById('btn-save').innerText = "Lưu danh sách";
+            }
+        });
+
+        function setupRealtimeListener(uid) {
+            // Đường dẫn public để nhiều người cùng thấy
+            const dataPath = collection(db, 'artifacts', appId, 'public', 'data', 'machines');
+            
+            if (unsubscribe) unsubscribe();
+            
+            unsubscribe = onSnapshot(dataPath, (snapshot) => {
+                items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sắp xếp theo thời gian cập nhật mới nhất trước
+                items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                render();
+            }, (error) => {
+                console.error("Snapshot error:", error);
+            });
         }
 
-        // Logic Đăng nhập
-        function checkLogin() {
+        // --- GIAO DIỆN & LOGIC ---
+        window.checkLogin = () => {
             const user = document.getElementById('login-user').value;
             const pass = document.getElementById('login-pass').value;
             const remember = document.getElementById('remember-me').checked;
-            const error = document.getElementById('login-error');
 
             if (user === 'wkd' && pass === 'abc123') {
-                if (remember) {
-                    localStorage.setItem('isLoggedIn', 'true');
-                } else {
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                }
+                if (remember) localStorage.setItem('isLoggedIn', 'true');
+                else sessionStorage.setItem('isLoggedIn', 'true');
                 showApp();
             } else {
-                error.classList.remove('hidden');
-                document.getElementById('login-screen').firstElementChild.classList.add('animate-bounce');
-                setTimeout(() => {
-                    document.getElementById('login-screen').firstElementChild.classList.remove('animate-bounce');
-                }, 500);
+                document.getElementById('login-error').classList.remove('hidden');
             }
-        }
+        };
 
-        function showApp() {
-            const login = document.getElementById('login-screen');
-            const app = document.getElementById('app');
-            login.classList.add('hidden');
-            app.classList.remove('opacity-0', 'pointer-events-none');
-        }
-
-        function logout() {
+        window.logout = () => {
             localStorage.removeItem('isLoggedIn');
             sessionStorage.removeItem('isLoggedIn');
             location.reload();
+        };
+
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app').classList.remove('opacity-0', 'pointer-events-none');
+            initAuth();
         }
 
-        function saveToStore() {
-            localStorage.setItem('v3_machine_list', JSON.stringify(items));
-            render();
+        if (localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true') {
+            showApp();
         }
 
-        function toggleForm() {
-            const form = document.getElementById('form-overlay');
-            form.classList.toggle('hidden');
-            if (!form.classList.contains('hidden')) {
-                document.getElementById('f-date').value = new Date().toLocaleDateString('vi-VN');
-            }
-        }
+        window.toggleForm = () => {
+            document.getElementById('form-overlay').classList.toggle('hidden');
+            document.getElementById('f-date').value = new Date().toLocaleDateString('vi-VN');
+        };
 
-        function setVisit(val) {
+        window.setVisit = (val) => {
             currentVisit = val;
             document.querySelectorAll('.v-btn').forEach(btn => {
                 const bVal = parseInt(btn.getAttribute('data-val'));
                 if (bVal === val) {
-                    btn.classList.replace('bg-white', 'bg-indigo-600');
-                    btn.classList.replace('text-slate-500', 'text-white');
-                    btn.classList.add('shadow-sm');
+                    btn.className = "v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-indigo-600 text-white shadow-sm";
                 } else {
-                    btn.classList.replace('bg-indigo-600', 'bg-white');
-                    btn.classList.replace('text-white', 'text-slate-500');
-                    btn.classList.remove('shadow-sm');
+                    btn.className = "v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500";
                 }
             });
-        }
+        };
 
-        function handleImgPreview(e) {
+        window.handleImgPreview = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -295,18 +272,19 @@
                 };
                 reader.readAsDataURL(file);
             }
-        }
+        };
 
-        function clearImg() {
+        window.clearImg = () => {
             currentImgBase64 = null;
             document.getElementById('img-preview-box').classList.add('hidden');
             document.getElementById('f-img-input').value = "";
-        }
+        };
 
-        function handleFormSubmit(e) {
+        window.handleFormSubmit = async (e) => {
             e.preventDefault();
+            if (!auth.currentUser) return;
+
             const newItem = {
-                id: Date.now(),
                 customer: document.getElementById('f-customer').value,
                 machine: document.getElementById('f-machine').value,
                 entryDate: document.getElementById('f-date').value,
@@ -315,31 +293,55 @@
                 checkedContent: document.getElementById('f-checked').value,
                 image: currentImgBase64,
                 checked: false,
-                updatedAt: new Date().toLocaleString('vi-VN')
+                updatedAt: new Date().toLocaleString('vi-VN'),
+                timestamp: Date.now()
             };
-            items.unshift(newItem);
-            saveToStore();
-            
-            document.getElementById('main-form').reset();
-            clearImg();
-            setVisit(1);
-            toggleForm();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
 
-        function deleteItem(id) {
-            if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
-                items = items.filter(i => i.id !== id);
-                saveToStore();
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'machines'), newItem);
+                document.getElementById('main-form').reset();
+                clearImg();
+                setVisit(1);
+                toggleForm();
+            } catch (err) {
+                console.error("Add error:", err);
             }
-        }
+        };
 
-        function toggleStatus(id) {
-            items = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i);
-            saveToStore();
-        }
+        window.openDelete = (id) => {
+            deleteId = id;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        };
 
-        function openEdit(id) {
+        window.closeDelete = () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            deleteId = null;
+        };
+
+        document.getElementById('btn-delete-confirm').onclick = async () => {
+            if (!deleteId || !auth.currentUser) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'machines', deleteId));
+                closeDelete();
+            } catch (err) {
+                console.error("Delete error:", err);
+            }
+        };
+
+        window.toggleStatus = async (id, currentStatus) => {
+            if (!auth.currentUser) return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'machines', id), {
+                    checked: !currentStatus,
+                    updatedAt: new Date().toLocaleString('vi-VN'),
+                    timestamp: Date.now()
+                });
+            } catch (err) {
+                console.error("Update error:", err);
+            }
+        };
+
+        window.openEdit = (id) => {
             const item = items.find(i => i.id === id);
             if (!item) return;
             document.getElementById('edit-id').value = id;
@@ -348,42 +350,60 @@
             document.getElementById('edit-visit').value = item.visitCount;
             document.getElementById('edit-content').value = item.checkedContent;
             document.getElementById('edit-overlay').classList.remove('hidden');
-        }
+        };
 
-        function closeEdit() {
+        window.closeEdit = () => {
             document.getElementById('edit-overlay').classList.add('hidden');
-        }
+        };
 
-        function saveEdit() {
-            const id = parseInt(document.getElementById('edit-id').value);
-            items = items.map(i => i.id === id ? {
-                ...i,
-                customer: document.getElementById('edit-customer').value,
-                machine: document.getElementById('edit-machine').value,
-                visitCount: parseInt(document.getElementById('edit-visit').value),
-                checkedContent: document.getElementById('edit-content').value,
-                updatedAt: new Date().toLocaleString('vi-VN')
-            } : i);
-            saveToStore();
-            closeEdit();
-        }
+        window.saveEdit = async () => {
+            const id = document.getElementById('edit-id').value;
+            if (!id || !auth.currentUser) return;
+            
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'machines', id), {
+                    customer: document.getElementById('edit-customer').value,
+                    machine: document.getElementById('edit-machine').value,
+                    visitCount: parseInt(document.getElementById('edit-visit').value),
+                    checkedContent: document.getElementById('edit-content').value,
+                    updatedAt: new Date().toLocaleString('vi-VN'),
+                    timestamp: Date.now()
+                });
+                closeEdit();
+            } catch (err) {
+                console.error("Save edit error:", err);
+            }
+        };
+
+        window.openZoom = (src) => {
+            document.getElementById('zoomed-image').src = src;
+            document.getElementById('image-zoom-overlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeZoom = () => {
+            document.getElementById('image-zoom-overlay').classList.add('hidden');
+            document.body.style.overflow = '';
+        };
 
         function render() {
             const container = document.getElementById('list-container');
             const countLabel = document.getElementById('total-count');
-            countLabel.innerText = `Tổng cộng: ${items.length} mục`;
+            countLabel.innerText = `Đang đồng bộ: ${items.length} mục`;
             
             container.innerHTML = '';
             
+            if (items.length === 0) {
+                container.innerHTML = `<div class="bg-white p-16 rounded-3xl border-2 border-dashed border-slate-200 text-slate-300 font-bold uppercase text-[10px] tracking-widest">Danh sách trống</div>`;
+                return;
+            }
+
             items.forEach((item, index) => {
                 const card = document.createElement('div');
-                
                 let bgColorClass = index % 2 === 0 ? 'bg-white border-white' : 'bg-slate-50/80 border-slate-50/80';
-                if (item.checked) {
-                    bgColorClass = 'bg-emerald-50/40 border-emerald-200';
-                }
+                if (item.checked) bgColorClass = 'bg-emerald-50/40 border-emerald-200';
 
-                card.className = `${bgColorClass} p-5 rounded-3xl shadow-sm border-2 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center`;
+                card.className = `${bgColorClass} p-5 rounded-3xl shadow-sm border-2 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center animate-in fade-in duration-500`;
                 
                 const lines = item.checkedContent ? item.checkedContent.split('\n').filter(l => l.trim() !== '') : [];
                 const contentHtml = lines.length > 1 
@@ -391,21 +411,20 @@
                     : `<p class="text-sm font-medium text-slate-700 text-left">${item.checkedContent || '---'}</p>`;
 
                 card.innerHTML = `
-                    <div class="flex-shrink-0 w-10 h-10 bg-slate-200/50 rounded-full flex items-center justify-center font-black text-slate-500 text-xs shadow-inner">#${index + 1}</div>
+                    <div class="flex-shrink-0 w-10 h-10 bg-slate-200/50 rounded-full flex items-center justify-center font-black text-slate-500 text-[10px]">#${index + 1}</div>
                     <div class="flex-1 text-left w-full">
                         <div class="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 class="font-black uppercase text-lg text-slate-800 leading-none">${item.customer}</h3>
-                            <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-lg border border-amber-200">LẦN ${item.visitCount}</span>
+                            <h3 class="font-black uppercase text-lg text-slate-800 leading-none tracking-tight">${item.customer}</h3>
+                            <span class="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-lg border border-amber-200">LẦN ${item.visitCount}</span>
                             <span class="text-slate-400 text-[9px] font-bold italic uppercase">Cập nhật: ${item.updatedAt}</span>
                         </div>
-                        <p class="text-indigo-600 font-bold text-xs mb-3 flex items-center gap-1 uppercase tracking-tight"><i data-lucide="monitor" class="w-3 h-3"></i> ${item.machine} | ${item.entryDate}</p>
-                        
+                        <p class="text-indigo-600 font-bold text-xs mb-3 flex items-center gap-1 uppercase tracking-tighter"><i data-lucide="monitor" class="w-3 h-3"></i> ${item.machine} | ${item.entryDate}</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-slate-200/20 p-3 rounded-2xl border border-slate-100 shadow-sm">
                                 <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Lỗi ban đầu:</p>
                                 <p class="text-sm text-slate-600 leading-snug">${item.issue || '---'}</p>
                             </div>
-                            <div class="bg-indigo-50/30 p-3 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 shadow-sm transition-colors" onclick="openEdit(${item.id})">
+                            <div class="bg-indigo-50/30 p-3 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 shadow-sm transition-colors" onclick="openEdit('${item.id}')">
                                 <p class="text-[9px] font-black text-indigo-500 uppercase mb-1 flex items-center gap-1">Đã kiểm tra <i data-lucide="edit-3" class="w-2.5 h-2.5"></i></p>
                                 ${contentHtml}
                             </div>
@@ -416,9 +435,9 @@
                             ${item.image ? `<img src="${item.image}" onclick="openZoom('${item.image}')" class="w-12 h-12 rounded-xl object-cover border-4 border-white shadow-md cursor-zoom-in hover:scale-105 transition-transform">` : '<div class="w-12 h-12 bg-slate-100 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-5 h-5"></i></div>'}
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="toggleStatus(${item.id})" class="p-2.5 rounded-xl transition-all ${item.checked ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-slate-100 text-slate-400'} shadow-sm active:scale-90"><i data-lucide="check-circle"></i></button>
-                            <button onclick="openEdit(${item.id})" class="p-2.5 bg-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm active:scale-90"><i data-lucide="edit-2"></i></button>
-                            <button onclick="deleteItem(${item.id})" class="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 shadow-sm active:scale-90"><i data-lucide="trash-2"></i></button>
+                            <button onclick="toggleStatus('${item.id}', ${item.checked})" class="p-2.5 rounded-xl transition-all ${item.checked ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-slate-100 text-slate-400'} shadow-sm active:scale-90"><i data-lucide="check-circle"></i></button>
+                            <button onclick="openEdit('${item.id}')" class="p-2.5 bg-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm active:scale-90"><i data-lucide="edit-2"></i></button>
+                            <button onclick="openDelete('${item.id}')" class="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 shadow-sm active:scale-90"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
                 `;
@@ -426,6 +445,9 @@
             });
             lucide.createIcons();
         }
+
+        // Khởi tạo các biểu tượng Lucide
+        lucide.createIcons();
     </script>
 </body>
 </html>
