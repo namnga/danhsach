@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Danh Sách</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        #login-screen {
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen p-4 md:p-8 text-center">
+
+    <!-- Màn hình Đăng nhập -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300">
+            <div class="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="lock" class="w-10 h-10 text-indigo-600"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">Truy cập hệ thống</h2>
+            <p class="text-slate-400 text-sm font-medium mb-8 uppercase tracking-widest">Vui lòng đăng nhập để tiếp tục</p>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Tài khoản</label>
+                    <input id="login-user" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none transition-all" placeholder="Nhập tài khoản">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Mật khẩu</label>
+                    <input id="login-pass" type="password" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none transition-all" placeholder="Nhập mật khẩu">
+                </div>
+                
+                <!-- Nút ghi nhớ -->
+                <div class="flex items-center gap-2 ml-1">
+                    <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="remember-me" class="text-xs font-bold text-slate-600 cursor-pointer uppercase tracking-tight">Ghi nhớ đăng nhập</label>
+                </div>
+
+                <div id="login-error" class="hidden text-red-500 text-xs font-bold text-center mt-2 italic">
+                    * Tài khoản hoặc mật khẩu không đúng!
+                </div>
+                <button onclick="checkLogin()" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-indigo-100 active:scale-95 mt-4 transition-all">
+                    Đăng nhập ngay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ứng dụng chính -->
+    <div class="max-w-6xl mx-auto opacity-0 pointer-events-none transition-opacity duration-500" id="app">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 bg-white p-6 rounded-2xl shadow-md border border-slate-200 sticky top-4 z-40">
+            <div class="text-left">
+                <h1 class="text-2xl md:text-3xl font-black text-indigo-600 uppercase tracking-tighter">Danh Sách</h1>
+                <div class="flex items-center gap-3">
+                    <p class="text-slate-500 text-xs font-bold uppercase" id="total-count">Tổng cộng: 0 mục</p>
+                    <button onclick="logout()" class="text-slate-400 hover:text-red-500 text-[10px] font-black uppercase underline decoration-2 underline-offset-4">Đăng xuất</button>
+                </div>
+            </div>
+            <button onclick="toggleForm()" id="btn-toggle" class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs shadow-lg hover:bg-indigo-700 transition-all active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4"></i> Thêm mới
+            </button>
+        </header>
+
+        <!-- Danh sách -->
+        <div id="list-container" class="space-y-4 mb-32"></div>
+
+        <!-- Form nhập liệu -->
+        <div id="form-overlay" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4">
+            <div class="bg-white w-full max-w-4xl p-8 rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-10">
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 class="text-xl font-black text-slate-800 uppercase text-left">Thêm Máy Mới</h2>
+                    <button onclick="toggleForm()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+                </div>
+                
+                <form id="main-form" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Khách hàng *</label>
+                            <input required id="f-customer" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="Tên khách hàng">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Máy móc *</label>
+                                <input required id="f-machine" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none" placeholder="Loại máy">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Ngày nhập</label>
+                                <input id="f-date" type="text" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold" readonly>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Số lần đi</label>
+                            <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                                <button type="button" onclick="setVisit(1)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-indigo-600 text-white shadow-sm" data-val="1">1</button>
+                                <button type="button" onclick="setVisit(2)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="2">2</button>
+                                <button type="button" onclick="setVisit(3)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="3">3</button>
+                                <button type="button" onclick="setVisit(4)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="4">4</button>
+                                <button type="button" onclick="setVisit(5)" class="v-btn flex-1 py-2 rounded-lg font-bold text-xs bg-white text-slate-500" data-val="5">5</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1 ml-1">Lỗi ban đầu</label>
+                            <textarea id="f-issue" class="w-full px-5 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-indigo-500 outline-none h-24" placeholder="Mô tả lỗi..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-indigo-500 mb-1 ml-1">Đã kiểm tra (Xuống dòng tạo danh sách)</label>
+                            <textarea id="f-checked" class="w-full px-5 py-3 border-2 border-slate-300 rounded-xl font-semibold focus:border-indigo-500 outline-none h-24 bg-indigo-50/30" placeholder="Nội dung đã làm..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <label class="flex-1 border-2 border-dashed border-slate-200 p-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50">
+                                <i data-lucide="image" class="w-4 h-4 text-slate-400"></i>
+                                <span class="text-[10px] font-black text-slate-500 uppercase">Ảnh đính kèm</span>
+                                <input type="file" id="f-img-input" accept="image/*" class="hidden" onchange="handleImgPreview(event)">
+                            </label>
+                            <div id="img-preview-box" class="hidden relative w-16 h-16 rounded-xl border overflow-hidden shadow-md">
+                                <img id="img-preview" src="" class="w-full h-full object-cover">
+                                <button type="button" onclick="clearImg()" class="absolute top-0 right-0 bg-red-500 text-white p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-indigo-100 active:scale-95">Lưu danh sách</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Inline Edit Box -->
+        <div id="edit-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-2xl p-6 rounded-[2rem] shadow-2xl">
+                <h3 class="font-black uppercase text-slate-800 mb-4 border-b pb-2 text-left">Chỉnh sửa nhanh</h3>
+                <div class="space-y-4 text-left">
+                    <input type="hidden" id="edit-id">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Khách hàng</label>
+                            <input id="edit-customer" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Máy móc</label>
+                            <input id="edit-machine" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Số lần đi</label>
+                            <select id="edit-visit" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold outline-none focus:border-indigo-500 bg-white">
+                                <option value="1">1 lần</option>
+                                <option value="2">2 lần</option>
+                                <option value="3">3 lần</option>
+                                <option value="4">4 lần</option>
+                                <option value="5">5 lần</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Đã kiểm tra</label>
+                        <textarea id="edit-content" class="w-full p-3 border-2 border-slate-200 rounded-xl font-semibold h-32 outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button onclick="closeEdit()" class="px-6 py-2 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest">Hủy</button>
+                        <button onclick="saveEdit()" class="px-8 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg uppercase tracking-widest">Lưu lại</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let items = [];
+        let currentVisit = 1;
+        let currentImgBase64 = null;
+
+        // Khởi tạo
+        window.onload = () => {
+            // Kiểm tra trạng thái đăng nhập từ cả localStorage và sessionStorage
+            const isPersistedLogin = localStorage.getItem('isLoggedIn') === 'true';
+            const isSessionLogin = sessionStorage.getItem('isLoggedIn') === 'true';
+
+            if (isPersistedLogin || isSessionLogin) {
+                showApp();
+            }
+
+            const data = localStorage.getItem('v3_machine_list');
+            if (data) items = JSON.parse(data);
+            document.getElementById('f-date').value = new Date().toLocaleDateString('vi-VN');
+            render();
+            lucide.createIcons();
+        };
+
+        // Logic Đăng nhập
+        function checkLogin() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            const remember = document.getElementById('remember-me').checked;
+            const error = document.getElementById('login-error');
+
+            // CẬP NHẬT MẬT KHẨU MỚI: abc123
+            if (user === 'wkd' && pass === 'abc123') {
+                if (remember) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                } else {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                }
+                showApp();
+            } else {
+                error.classList.remove('hidden');
+                document.getElementById('login-screen').firstElementChild.classList.add('animate-bounce');
+                setTimeout(() => {
+                    document.getElementById('login-screen').firstElementChild.classList.remove('animate-bounce');
+                }, 500);
+            }
+        }
+
+        function showApp() {
+            const login = document.getElementById('login-screen');
+            const app = document.getElementById('app');
+            login.classList.add('hidden');
+            app.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
+        function saveToStore() {
+            localStorage.setItem('v3_machine_list', JSON.stringify(items));
+            render();
+        }
+
+        function toggleForm() {
+            const form = document.getElementById('form-overlay');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                document.getElementById('f-date').value = new Date().toLocaleDateString('vi-VN');
+            }
+        }
+
+        function setVisit(val) {
+            currentVisit = val;
+            document.querySelectorAll('.v-btn').forEach(btn => {
+                const bVal = parseInt(btn.getAttribute('data-val'));
+                if (bVal === val) {
+                    btn.classList.replace('bg-white', 'bg-indigo-600');
+                    btn.classList.replace('text-slate-500', 'text-white');
+                    btn.classList.add('shadow-sm');
+                } else {
+                    btn.classList.replace('bg-indigo-600', 'bg-white');
+                    btn.classList.replace('text-white', 'text-slate-500');
+                    btn.classList.remove('shadow-sm');
+                }
+            });
+        }
+
+        function handleImgPreview(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    currentImgBase64 = reader.result;
+                    document.getElementById('img-preview').src = reader.result;
+                    document.getElementById('img-preview-box').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearImg() {
+            currentImgBase64 = null;
+            document.getElementById('img-preview-box').classList.add('hidden');
+            document.getElementById('f-img-input').value = "";
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                customer: document.getElementById('f-customer').value,
+                machine: document.getElementById('f-machine').value,
+                entryDate: document.getElementById('f-date').value,
+                visitCount: currentVisit,
+                issue: document.getElementById('f-issue').value,
+                checkedContent: document.getElementById('f-checked').value,
+                image: currentImgBase64,
+                checked: false,
+                updatedAt: new Date().toLocaleString('vi-VN')
+            };
+            items.unshift(newItem);
+            saveToStore();
+            
+            document.getElementById('main-form').reset();
+            clearImg();
+            setVisit(1);
+            toggleForm();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteItem(id) {
+            if (confirm("Bạn có chắc chắn muốn xóa mục này?")) {
+                items = items.filter(i => i.id !== id);
+                saveToStore();
+            }
+        }
+
+        function toggleStatus(id) {
+            items = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i);
+            saveToStore();
+        }
+
+        function openEdit(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-customer').value = item.customer;
+            document.getElementById('edit-machine').value = item.machine;
+            document.getElementById('edit-visit').value = item.visitCount;
+            document.getElementById('edit-content').value = item.checkedContent;
+            document.getElementById('edit-overlay').classList.remove('hidden');
+        }
+
+        function closeEdit() {
+            document.getElementById('edit-overlay').classList.add('hidden');
+        }
+
+        function saveEdit() {
+            const id = parseInt(document.getElementById('edit-id').value);
+            items = items.map(i => i.id === id ? {
+                ...i,
+                customer: document.getElementById('edit-customer').value,
+                machine: document.getElementById('edit-machine').value,
+                visitCount: parseInt(document.getElementById('edit-visit').value),
+                checkedContent: document.getElementById('edit-content').value,
+                updatedAt: new Date().toLocaleString('vi-VN')
+            } : i);
+            saveToStore();
+            closeEdit();
+        }
+
+        function render() {
+            const container = document.getElementById('list-container');
+            const countLabel = document.getElementById('total-count');
+            countLabel.innerText = `Tổng cộng: ${items.length} mục`;
+            
+            container.innerHTML = '';
+            
+            items.forEach((item, index) => {
+                const card = document.createElement('div');
+                
+                let bgColorClass = index % 2 === 0 ? 'bg-white border-white' : 'bg-slate-50/80 border-slate-50/80';
+                if (item.checked) {
+                    bgColorClass = 'bg-emerald-50/40 border-emerald-200';
+                }
+
+                card.className = `${bgColorClass} p-5 rounded-3xl shadow-sm border-2 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center`;
+                
+                const lines = item.checkedContent ? item.checkedContent.split('\n').filter(l => l.trim() !== '') : [];
+                const contentHtml = lines.length > 1 
+                    ? `<ul class="space-y-1 mt-1">${lines.map(l => `<li class="flex gap-2 items-start text-left"><span class="w-1.5 h-1.5 bg-indigo-400 rounded-full mt-1.5 flex-shrink-0"></span><span class="text-sm font-medium text-slate-700">${l}</span></li>`).join('')}</ul>`
+                    : `<p class="text-sm font-medium text-slate-700 text-left">${item.checkedContent || '---'}</p>`;
+
+                card.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 bg-slate-200/50 rounded-full flex items-center justify-center font-black text-slate-500 text-xs shadow-inner">#${index + 1}</div>
+                    <div class="flex-1 text-left w-full">
+                        <div class="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 class="font-black uppercase text-lg text-slate-800 leading-none">${item.customer}</h3>
+                            <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-lg border border-amber-200">LẦN ${item.visitCount}</span>
+                            <span class="text-slate-400 text-[9px] font-bold italic uppercase">Cập nhật: ${item.updatedAt}</span>
+                        </div>
+                        <p class="text-indigo-600 font-bold text-xs mb-3 flex items-center gap-1 uppercase tracking-tight"><i data-lucide="monitor" class="w-3 h-3"></i> ${item.machine} | ${item.entryDate}</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-200/20 p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Lỗi ban đầu:</p>
+                                <p class="text-sm text-slate-600 leading-snug">${item.issue || '---'}</p>
+                            </div>
+                            <div class="bg-indigo-50/30 p-3 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-50 shadow-sm transition-colors" onclick="openEdit(${item.id})">
+                                <p class="text-[9px] font-black text-indigo-500 uppercase mb-1 flex items-center gap-1">Đã kiểm tra <i data-lucide="edit-3" class="w-2.5 h-2.5"></i></p>
+                                ${contentHtml}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-between border-t md:border-t-0 pt-3 md:pt-0">
+                        <div class="relative">
+                            ${item.image ? `<img src="${item.image}" class="w-12 h-12 rounded-xl object-cover border-4 border-white shadow-md">` : '<div class="w-12 h-12 bg-slate-100 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-5 h-5"></i></div>'}
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="toggleStatus(${item.id})" class="p-2.5 rounded-xl transition-all ${item.checked ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-slate-100 text-slate-400'} shadow-sm active:scale-90"><i data-lucide="check-circle"></i></button>
+                            <button onclick="openEdit(${item.id})" class="p-2.5 bg-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm active:scale-90"><i data-lucide="edit-2"></i></button>
+                            <button onclick="deleteItem(${item.id})" class="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 shadow-sm active:scale-90"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
